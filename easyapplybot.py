@@ -3,6 +3,7 @@ import time, random, os, csv, platform
 import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
@@ -20,7 +21,7 @@ import yaml
 from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
-driver = webdriver.Chrome(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=ChromeService(executable_path=ChromeDriverManager().install()))
 
 
 def setupLogger() -> None:
@@ -310,48 +311,41 @@ class EasyApplyBot:
             return len(self.browser.find_elements(button_locator[0],
                                                   button_locator[1])) > 0
         # try:
+
+        input_fields = self.browser.find_elements(By.CSS_SELECTOR, "input.artdeco-text-input--input[type='text']")
+
+        for input_field in input_fields:
+            log.debug(f"Text of input field is {input_field.text}")
+            if "phone number" in input_field.text.lower():
+                input_field.clear()
+                input_field.send_keys(self.phone_number)
+        time.sleep(random.uniform(4.5, 6.5))
+
+
         next_locater = (By.CSS_SELECTOR,
                         "button[aria-label='Continue to next step']")
+        error_locator = (By.CSS_SELECTOR,
+                        "p[data-test-form-element-error-message='true']")
 
-        input_field = self.browser.find_element(By.CSS_SELECTOR, "input.artdeco-text-input--input[type='text']")
+        # Click Next or submitt button if possible
+        button: None = None
+        if is_present(next_locater):
+            button: None = self.wait.until(EC.element_to_be_clickable(next_locater))
 
-        if input_field:
-            input_field.clear()
-            input_field.send_keys(self.phone_number)
-            time.sleep(random.uniform(4.5, 6.5))
-        
-
-
-            next_locater = (By.CSS_SELECTOR,
-                            "button[aria-label='Continue to next step']")
-            error_locator = (By.CSS_SELECTOR,
-                             "p[data-test-form-element-error-message='true']")
-
-            # Click Next or submitt button if possible
-            button: None = None
-            if is_present(next_locater):
-                button: None = self.wait.until(EC.element_to_be_clickable(next_locater))
-
-            if is_present(error_locator):
-                for element in self.browser.find_elements(error_locator[0],
-                                                            error_locator[1]):
-                    text = element.text
-                    if "Please enter a valid answer" in text:
-                        button = None
-                        break
-            if button:
-                button.click()
-                time.sleep(random.uniform(1.5, 2.5))
-                # if i in (3, 4):
-                #     submitted = True
-                # if i != 2:
-                #     break
-
-
+        if is_present(error_locator):
+            for element in self.browser.find_elements(error_locator[0],
+                                                        error_locator[1]):
+                text = element.text
+                if "Please enter a valid answer" in text:
+                    button = None
+                    break
+        if button:
+            button.click()
+            time.sleep(random.uniform(1.5, 2.5))
 
         else:
-            log.debug(f"Could not find phone number field")
-                
+            log.debug("Could not find phone number field")
+
 
 
     def send_resume(self) -> bool:
@@ -371,7 +365,7 @@ class EasyApplyBot:
                                           "button[aria-label='Submit application']")
             error_locator = (By.CSS_SELECTOR,
                              "p[data-test-form-element-error-message='true']")
-            upload_locator = upload_locator = (By.CSS_SELECTOR, "button[aria-label='DOC, DOCX, PDF formats only (5 MB).']")
+            upload_locator = (By.CSS_SELECTOR, "button[aria-label='DOC, DOCX, PDF formats only (5 MB).']")
             follow_locator = (By.CSS_SELECTOR, "label[for='follow-company-checkbox']")
 
             submitted = False
@@ -393,6 +387,24 @@ class EasyApplyBot:
                                 input_button.send_keys(self.uploads[key])
 
                     # input_button[0].send_keys(self.cover_letter_loctn)
+                    time.sleep(random.uniform(4.5, 6.5))
+                
+                elif is_present(next_locater) or is_present(review_locater):
+                    question_fields = self.browser.find_elements(By.CSS_SELECTOR,
+                    "input.artdeco-text-input--input[type='text']")
+                    log.debug("Looking for question fields")
+                    for question_field in question_fields:
+                        question_field.clear()
+                        log.debug(f"{question_field.text}")
+                        question_field.send_keys(2)
+                    time.sleep(random.uniform(4.5, 6.5))
+
+                    option_fields = self.browser.find_elements(By.CLASS_NAME, "fb-dash-form-element__label fb-dash-form-element__label-title--is-required")
+                    log.debug(f"Looking for option fields: {option_fields}")
+                    for option_field in option_fields:
+                        option_field.clear()
+                        log.debug(f"{option_field.text}")
+                        option_field.select_by_visible_text("Yes")
                     time.sleep(random.uniform(4.5, 6.5))
 
                 # Click Next or submitt button if possible
@@ -459,6 +471,8 @@ class EasyApplyBot:
         pyautogui.press('esc')
 
     def next_jobs_page(self, position, location, jobs_per_page):
+        log.debug(f"Postion for finding job is: {position}")
+        log.debug(f"Location for finding job is: {location}")
         self.browser.get(
             "https://www.linkedin.com/jobs/search/?f_LF=f_AL&keywords=" +
             position + location + "&start=" + str(jobs_per_page))
