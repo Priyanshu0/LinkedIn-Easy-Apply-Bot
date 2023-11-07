@@ -315,8 +315,9 @@ class EasyApplyBot:
         input_fields = self.browser.find_elements(By.CSS_SELECTOR, "input.artdeco-text-input--input[type='text']")
 
         for input_field in input_fields:
-            log.debug(f"Text of input field is {input_field.text}")
-            if "phone number" in input_field.text.lower():
+            label = input_field.find_element(By.XPATH, "..")
+            log.debug(f"Text of input field is {label.text}")
+            if "phone number" in label.text.lower():
                 input_field.clear()
                 input_field.send_keys(self.phone_number)
         time.sleep(random.uniform(4.5, 6.5))
