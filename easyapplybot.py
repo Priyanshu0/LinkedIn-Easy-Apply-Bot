@@ -21,7 +21,10 @@ import yaml
 from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
-driver = webdriver.Chrome(service=ChromeService(executable_path=ChromeDriverManager().install()))
+chrome_binary = "/Users/priyanshutuli/Desktop/LinkedinBot/LinkedIn-Easy-Apply-Bot/binaries/Google Chrome for Testing"
+options = webdriver.ChromeOptions()
+options.binary_location = chrome_binary
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install(), port=1234), options=options)
 
 
 def setupLogger() -> None:
