@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 chrome_binary = "/Users/priyanshutuli/Desktop/LinkedinBot/LinkedIn-Easy-Apply-Bot/binaries/Google Chrome for Testing"
 options = webdriver.ChromeOptions()
 options.binary_location = chrome_binary
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install(), port=1234), options=options)
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install(), port=9090), options=options)
 
 
 def setupLogger() -> None:
